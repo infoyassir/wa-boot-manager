@@ -15,16 +15,51 @@ const logger = require('./utils/logger');
 
 const app = express();
 const server = http.createServer(app);
+
+// Allowed origins - include localhost, VPS IP, and any custom domains
+const allowedOrigins = [
+  'http://localhost:3030',
+  'http://localhost:3000',
+  'http://127.0.0.1:3030',
+  'http://127.0.0.1:3000',
+  process.env.FRONTEND_URL,
+  process.env.VPS_IP ? `http://${process.env.VPS_IP}:3030` : null,
+  process.env.VPS_IP ? `https://${process.env.VPS_IP}:3030` : null,
+].filter(Boolean);
+
 const io = new Server(server, {
   cors: {
-    origin: '*', // Allow all origins for development (Flutter Web runs on random ports)
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or Postman)
+      if (!origin) return callback(null, true);
+      
+      // Check if origin is allowed or matches VPS IP pattern
+      if (allowedOrigins.includes(origin) || 
+          origin.match(/^https?:\/\/\d+\.\d+\.\d+\.\d+:\d+$/)) {
+        callback(null, true);
+      } else {
+        callback(null, true); // Allow all for now, can be restricted later
+      }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true,
   },
 });
 
 // Middleware
 app.use(cors({
-  origin: '*', // Allow all origins for development
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or Postman)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is allowed or matches IP pattern
+    if (allowedOrigins.includes(origin) || 
+        origin.match(/^https?:\/\/\d+\.\d+\.\d+\.\d+:\d+$/)) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all for now, can be restricted later
+    }
+  },
   credentials: true,
 }));
 app.use(express.json());
