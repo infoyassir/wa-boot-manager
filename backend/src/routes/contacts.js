@@ -44,6 +44,81 @@ router.get('/', (req, res) => {
   res.json({ success: true, data: filtered });
 });
 
+// POST /api/contacts/sync - Sync contacts from WhatsApp
+router.post('/sync', async (req, res) => {
+  const { sessionId } = req.body;
+
+  if (!sessionId) {
+    return res.status(400).json({ error: 'sessionId is required' });
+  }
+
+  try {
+    const sessionManager = req.app.get('sessionManager');
+    const client = sessionManager.getClient(sessionId);
+
+    if (!client) {
+      return res.status(404).json({ error: 'Session not found or not ready' });
+    }
+
+    // Get WhatsApp contacts
+    const whatsappContacts = await client.getContacts();
+    const existingContacts = readContacts();
+    const existingPhones = new Set(existingContacts.map(c => c.phone));
+
+    let addedCount = 0;
+    let updatedCount = 0;
+
+    for (const contact of whatsappContacts) {
+      // Skip non-user contacts and groups
+      if (!contact.isUser || contact.isGroup) continue;
+
+      const phone = contact.id.user;
+      const name = contact.name || contact.pushname || phone;
+
+      const existingIndex = existingContacts.findIndex(c => c.phone === phone);
+
+      if (existingIndex === -1) {
+        // Add new contact
+        existingContacts.push({
+          id: uuidv4(),
+          name,
+          phone,
+          email: null,
+          notes: 'Imported from WhatsApp',
+          tags: ['whatsapp'],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+        addedCount++;
+      } else {
+        // Update existing contact name if changed
+        if (existingContacts[existingIndex].name !== name) {
+          existingContacts[existingIndex].name = name;
+          existingContacts[existingIndex].updatedAt = new Date().toISOString();
+          if (!existingContacts[existingIndex].tags.includes('whatsapp')) {
+            existingContacts[existingIndex].tags.push('whatsapp');
+          }
+          updatedCount++;
+        }
+      }
+    }
+
+    writeContacts(existingContacts);
+
+    res.json({ 
+      success: true, 
+      data: { 
+        added: addedCount, 
+        updated: updatedCount,
+        total: existingContacts.length 
+      },
+      message: `Synchronisation terminée: ${addedCount} ajoutés, ${updatedCount} mis à jour`
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/contacts/:id - Get contact by ID
 router.get('/:id', (req, res) => {
   const contacts = readContacts();

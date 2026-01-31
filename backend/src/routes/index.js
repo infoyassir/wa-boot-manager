@@ -10,21 +10,20 @@ const SessionManager = require('./services/SessionManager');
 const MessageService = require('./services/MessageService');
 const AutoResponderService = require('./services/AutoResponderService');
 const SchedulerService = require('./services/SchedulerService');
-const SmartBotService = require('./services/SmartBotService');
 const logger = require('./utils/logger');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: '*', // Allow all origins for development (Flutter Web runs on random ports)
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
   },
 });
 
 // Middleware
 app.use(cors({
-  origin: '*', // Allow all origins for development
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true,
 }));
 app.use(express.json());
@@ -50,14 +49,12 @@ const sessionManager = new SessionManager(io, sessionsPath);
 const messageService = new MessageService(sessionManager);
 const autoResponderService = new AutoResponderService(sessionManager, messageService);
 const schedulerService = new SchedulerService(sessionManager, messageService);
-const smartBotService = new SmartBotService(sessionManager, messageService);
 
 // Make services available to routes
 app.set('sessionManager', sessionManager);
 app.set('messageService', messageService);
 app.set('autoResponderService', autoResponderService);
 app.set('schedulerService', schedulerService);
-app.set('smartBotService', smartBotService);
 app.set('io', io);
 
 // Routes
@@ -68,15 +65,6 @@ app.use('/api/scheduled', apiKeyAuth, require('./routes/scheduled'));
 app.use('/api/templates', apiKeyAuth, require('./routes/templates'));
 app.use('/api/contacts', apiKeyAuth, require('./routes/contacts'));
 app.use('/api/debug', apiKeyAuth, require('./routes/debug')(sessionManager));
-
-// E-commerce Routes (POS Integration)
-app.use('/api/ecommerce', apiKeyAuth, require('./routes/ecommerce'));
-
-// Memory/Database Routes (Bot Intelligence & Preferences)
-app.use('/api/memory', apiKeyAuth, require('./routes/memory'));
-
-// Smart Bot Routes
-app.use('/api/bot', apiKeyAuth, require('./routes/bot')(smartBotService));
 
 // Health check
 app.get('/health', (req, res) => {

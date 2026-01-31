@@ -140,7 +140,8 @@ export function ScheduledManager() {
 
   const handleSave = async () => {
     if (!activeSessionId) return;
-    if (!recipient.trim() || (!message.trim() && !templateId)) {
+    const hasTemplate = templateId && templateId !== 'none';
+    if (!recipient.trim() || (!message.trim() && !hasTemplate)) {
       toast.error('Veuillez remplir le destinataire et le message');
       return;
     }
@@ -158,7 +159,7 @@ export function ScheduledManager() {
       const data = {
         recipient: recipient.trim(),
         message: message.trim(),
-        templateId: templateId || undefined,
+        templateId: (templateId && templateId !== 'none') ? templateId : undefined,
         type: scheduleType,
         scheduledAt: scheduleType === 'once' ? new Date(scheduledAt).toISOString() : undefined,
         cronExpression: scheduleType === 'recurring' ? cronExpression : undefined,
@@ -399,7 +400,7 @@ export function ScheduledManager() {
                   <SelectValue placeholder="Sélectionner un template..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Aucun template</SelectItem>
+                  <SelectItem value="none">Aucun template</SelectItem>
                   {templates.map((template) => (
                     <SelectItem key={template.id} value={template.id}>
                       {template.name}
@@ -410,13 +411,13 @@ export function ScheduledManager() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Message {!templateId && '*'}</label>
+              <label className="text-sm font-medium">Message {(!templateId || templateId === 'none') && '*'}</label>
               <Textarea
                 placeholder="Contenu du message..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 rows={4}
-                disabled={!!templateId}
+                disabled={!!(templateId && templateId !== 'none')}
               />
             </div>
 

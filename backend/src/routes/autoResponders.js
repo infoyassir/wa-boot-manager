@@ -28,11 +28,21 @@ router.post('/', (req, res) => {
     mediaUrl,
     filename,
     stopOnMatch = false,
+    templateId,
+    priority = 0,
+    enabled = true,
   } = req.body;
 
-  if (!sessionId || !trigger || !response) {
+  if (!sessionId || !trigger) {
     return res.status(400).json({ 
-      error: 'sessionId, trigger, and response are required' 
+      error: 'sessionId and trigger are required' 
+    });
+  }
+
+  // Response or templateId is required
+  if (!response && !templateId) {
+    return res.status(400).json({ 
+      error: 'Either response or templateId is required' 
     });
   }
 
@@ -41,11 +51,14 @@ router.post('/', (req, res) => {
       name: name || `Rule: ${trigger}`,
       trigger,
       matchType,
-      response,
+      response: response || '',
       responseType,
       mediaUrl,
       filename,
       stopOnMatch,
+      templateId,
+      priority,
+      enabled,
     });
     res.json({ success: true, data: rule });
   } catch (err) {

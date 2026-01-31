@@ -125,7 +125,8 @@ export function AutoResponderManager() {
 
   const handleSave = async () => {
     if (!activeSessionId) return;
-    if (!trigger.trim() || (!response.trim() && !templateId)) {
+    const hasTemplate = templateId && templateId !== 'none';
+    if (!trigger.trim() || (!response.trim() && !hasTemplate)) {
       toast.error('Veuillez remplir tous les champs obligatoires');
       return;
     }
@@ -136,7 +137,7 @@ export function AutoResponderManager() {
         trigger: trigger.trim(),
         matchType,
         response: response.trim(),
-        templateId: templateId || undefined,
+        templateId: (templateId && templateId !== 'none') ? templateId : undefined,
         priority,
         enabled: true,
       };
@@ -346,7 +347,7 @@ export function AutoResponderManager() {
                   <SelectValue placeholder="Sélectionner un template..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Aucun template</SelectItem>
+                  <SelectItem value="none">Aucun template</SelectItem>
                   {templates.map((template) => (
                     <SelectItem key={template.id} value={template.id}>
                       {template.name}
@@ -358,14 +359,14 @@ export function AutoResponderManager() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium">
-                Réponse {!templateId && '*'}
+                Réponse {(!templateId || templateId === 'none') && '*'}
               </label>
               <Textarea
                 placeholder="Message de réponse..."
                 value={response}
                 onChange={(e) => setResponse(e.target.value)}
                 rows={4}
-                disabled={!!templateId}
+                disabled={!!(templateId && templateId !== 'none')}
               />
             </div>
 

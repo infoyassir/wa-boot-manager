@@ -48,8 +48,17 @@ class AutoResponderService {
    * Setup message listeners for all sessions
    */
   _setupListeners() {
-    // Listen for new sessions
-    this.sessionManager.io.on('session:ready', ({ sessionId }) => {
+    // Attach listeners to existing sessions
+    const sessions = this.sessionManager.getAllSessions();
+    for (const session of sessions) {
+      if (session.status === 'connected') {
+        this._attachListener(session.id);
+      }
+    }
+
+    // Listen for sessions becoming ready
+    // SessionManager now emits 'session:ready' as an EventEmitter
+    this.sessionManager.on('session:ready', ({ sessionId }) => {
       this._attachListener(sessionId);
     });
   }

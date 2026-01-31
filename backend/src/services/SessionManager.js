@@ -3,10 +3,12 @@ const QRCode = require('qrcode');
 const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
+const EventEmitter = require('events');
 const logger = require('../utils/logger');
 
-class SessionManager {
+class SessionManager extends EventEmitter {
   constructor(io, sessionsPath) {
+    super();
     this.io = io;
     this.sessionsPath = sessionsPath;
     this.sessions = new Map(); // sessionId -> { client, status, info }
@@ -93,6 +95,8 @@ class SessionManager {
       this._updateSessionStatus(sessionId, 'connected', info);
       this.io.to(`session:${sessionId}`).emit('ready', { sessionId, info });
       this.io.emit('session:ready', { sessionId, info });
+      // Also emit via EventEmitter so internal services can listen server-side
+      this.emit('session:ready', { sessionId, info });
     });
 
     // Authentication success
@@ -204,6 +208,26 @@ class SessionManager {
    */
   getSession(sessionId) {
     return this.sessions.get(sessionId);
+  }
+
+  /**
+   * Get session info (status and details)
+   */
+  getSessionInfo(sessionId) {
+    const session = this.sessions.get(sessionId);
+    if (!session) return null;
+    
+    return {
+      id: sessionId,
+      status: session.status,
+      info: session.info ? {
+        pushname: session.info.pushname,
+        wid: session.info.wid?._serialized,
+        phone: session.info.wid?.user,
+      } : null,
+      createdAt: session.createdAt,
+      messageCount: session.messageCount,
+    };
   }
 
   /**

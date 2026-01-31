@@ -231,6 +231,21 @@ class SchedulerService {
     this._saveScheduledMessages();
     return data;
   }
+
+  /**
+   * Execute a scheduled task immediately
+   */
+  async runTaskNow(taskId) {
+    const taskEntry = this.scheduledTasks.get(taskId);
+    if (!taskEntry) {
+      throw new Error('Task not found');
+    }
+
+    const { data } = taskEntry;
+    await this._executeTask(data);
+    logger.info(`Task executed manually: ${taskId}`);
+    return { success: true };
+  }
 }
 
 module.exports = SchedulerService;

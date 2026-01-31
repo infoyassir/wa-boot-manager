@@ -21,33 +21,52 @@ router.post('/', (req, res) => {
   const {
     sessionId,
     to,
+    recipient,  // Support both 'to' and 'recipient'
     message,
     messageType = 'text',
     mediaUrl,
-    scheduleType, // 'once' or 'recurring'
-    scheduledTime, // ISO date string for 'once'
-    cronExpression, // cron expression for 'recurring'
+    scheduleType,
+    type,  // Support both 'scheduleType' and 'type'
+    scheduledTime,
+    scheduledAt,  // Support both 'scheduledTime' and 'scheduledAt'
+    cronExpression,
+    templateId,
+    enabled = true,
   } = req.body;
 
-  if (!sessionId || !to || !message) {
+  // Use recipient or to
+  const actualRecipient = recipient || to;
+  // Use type or scheduleType
+  const actualScheduleType = type || scheduleType;
+  // Use scheduledAt or scheduledTime
+  const actualScheduledTime = scheduledAt || scheduledTime;
+
+  if (!sessionId || !actualRecipient) {
     return res.status(400).json({ 
-      error: 'sessionId, to, and message are required' 
+      error: 'sessionId and recipient (or to) are required' 
     });
   }
 
-  if (!scheduleType || !['once', 'recurring'].includes(scheduleType)) {
+  // Message or templateId is required
+  if (!message && !templateId) {
     return res.status(400).json({ 
-      error: 'scheduleType must be "once" or "recurring"' 
+      error: 'Either message or templateId is required' 
     });
   }
 
-  if (scheduleType === 'once' && !scheduledTime) {
+  if (!actualScheduleType || !['once', 'recurring'].includes(actualScheduleType)) {
     return res.status(400).json({ 
-      error: 'scheduledTime is required for one-time messages' 
+      error: 'type (or scheduleType) must be "once" or "recurring"' 
     });
   }
 
-  if (scheduleType === 'recurring' && !cronExpression) {
+  if (actualScheduleType === 'once' && !actualScheduledTime) {
+    return res.status(400).json({ 
+      error: 'scheduledAt (or scheduledTime) is required for one-time messages' 
+    });
+  }
+
+  if (actualScheduleType === 'recurring' && !cronExpression) {
     return res.status(400).json({ 
       error: 'cronExpression is required for recurring messages' 
     });
@@ -56,13 +75,15 @@ router.post('/', (req, res) => {
   try {
     const task = schedulerService.scheduleMessage({
       sessionId,
-      to,
-      message,
+      to: actualRecipient,
+      message: message || '',
       messageType,
       mediaUrl,
-      scheduleType,
-      scheduledTime,
+      scheduleType: actualScheduleType,
+      scheduledTime: actualScheduledTime,
       cronExpression,
+      templateId,
+      enabled,
     });
     res.json({ success: true, data: task });
   } catch (err) {
@@ -77,6 +98,23 @@ router.delete('/:id', (req, res) => {
   try {
     schedulerService.cancelTask(req.params.id);
     res.json({ success: true, message: 'Scheduled message cancelled' });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// POST /api/scheduled/:id/run - Execute scheduled message now
+router.post('/:id/run', async (req, res) => {
+  const schedulerService = req.app.get('schedulerService');
+  const { sessionId } = req.body;
+
+  if (!sessionId) {
+    return res.status(400).json({ error: 'sessionId is required' });
+  }
+
+  try {
+    await schedulerService.runTaskNow(req.params.id);
+    res.json({ success: true, message: 'Message sent successfully' });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

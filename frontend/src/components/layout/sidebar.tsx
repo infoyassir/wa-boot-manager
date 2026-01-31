@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   Menu,
   X,
+  Bug,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAppStore } from '@/store/app-store';
@@ -26,6 +27,7 @@ const navigation = [
   { name: 'Auto-Réponses', href: '/auto-responders', icon: Zap },
   { name: 'Messages Planifiés', href: '/scheduled', icon: Calendar },
   { name: 'Templates', href: '/templates', icon: FileText },
+  { name: 'Debug Center', href: '/debug', icon: Bug },
   { name: 'Paramètres', href: '/settings', icon: Settings },
 ];
 

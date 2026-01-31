@@ -149,7 +149,13 @@ class MessageService {
   async getMessages(sessionId, chatId, limit = 50) {
     const client = this.sessionManager.getClient(sessionId);
     if (!client) throw new Error(`Session ${sessionId} not found`);
-
+    
+    // Check if client is ready (accept both 'ready' and 'connected' statuses)
+    const sessionInfo = this.sessionManager.getSessionInfo(sessionId);
+    if (!sessionInfo || (sessionInfo.status !== 'ready' && sessionInfo.status !== 'connected')) {
+      throw new Error(`Session ${sessionId} is not ready. Current status: ${sessionInfo?.status || 'unknown'}. Please scan QR code first.`);
+    }
+    
     const formattedChatId = this._formatChatId(chatId);
     const chat = await client.getChatById(formattedChatId);
     const messages = await chat.fetchMessages({ limit });
@@ -163,6 +169,12 @@ class MessageService {
   async getChats(sessionId) {
     const client = this.sessionManager.getClient(sessionId);
     if (!client) throw new Error(`Session ${sessionId} not found`);
+
+    // Check if client is ready (accept both 'ready' and 'connected' statuses)
+    const sessionInfo = this.sessionManager.getSessionInfo(sessionId);
+    if (!sessionInfo || (sessionInfo.status !== 'ready' && sessionInfo.status !== 'connected')) {
+      throw new Error(`Session ${sessionId} is not ready. Current status: ${sessionInfo?.status || 'unknown'}. Please scan QR code first.`);
+    }
 
     const chats = await client.getChats();
     return chats.map(chat => ({
@@ -222,7 +234,7 @@ class MessageService {
    * Format received message for response
    */
   async _formatReceivedMessage(message) {
-    return {
+    const result = {
       id: message.id._serialized,
       from: message.from,
       to: message.to,
@@ -232,6 +244,23 @@ class MessageService {
       type: message.type,
       hasMedia: message.hasMedia,
     };
+
+    // Download and include media data if present
+    if (message.hasMedia) {
+      try {
+        const media = await message.downloadMedia();
+        if (media) {
+          // Convert to data URL for frontend display
+          result.mediaUrl = `data:${media.mimetype};base64,${media.data}`;
+          result.mimetype = media.mimetype;
+          result.filename = media.filename;
+        }
+      } catch (error) {
+        logger.warn(`Failed to download media for message ${message.id._serialized}: ${error.message}`);
+      }
+    }
+
+    return result;
   }
 }
 

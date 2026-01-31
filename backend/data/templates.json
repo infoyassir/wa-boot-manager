@@ -1,0 +1,22 @@
+[
+  {
+    "id": "f5f119e2-616a-4591-8f19-a2f7cdb33c68",
+    "name": "Tamplate1",
+    "content": "Bonjours",
+    "category": "general",
+    "variables": [],
+    "createdAt": "2026-01-30T19:50:04.228Z",
+    "updatedAt": "2026-01-30T19:50:04.228Z",
+    "usageCount": 0
+  },
+  {
+    "id": "419954cf-5ec3-4f29-a5fc-d1a178c339c7",
+    "name": "Confirmation",
+    "content": "testw sgfqrg qerg qeg",
+    "category": "promo",
+    "variables": [],
+    "createdAt": "2026-01-31T00:25:52.597Z",
+    "updatedAt": "2026-01-31T01:06:09.001Z",
+    "usageCount": 0
+  }
+]
