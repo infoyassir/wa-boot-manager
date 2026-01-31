@@ -62,7 +62,7 @@ export default function SettingsPage() {
               id="api-url"
               value={apiUrl}
               onChange={(e) => setApiUrl(e.target.value)}
-              placeholder="http://localhost:3001"
+              placeholder="http://localhost:3031"
             />
           </div>
           <div className="space-y-2">
