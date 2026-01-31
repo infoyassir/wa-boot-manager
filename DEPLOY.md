@@ -5,6 +5,7 @@
 ### Backend (.env)
 ```bash
 PORT=3031
+HOST=0.0.0.0  # Important: Listen on all interfaces for external access
 NODE_ENV=production
 VPS_IP=38.242.233.32  # Votre IP VPS
 FRONTEND_URL=http://38.242.233.32:3030
@@ -67,6 +68,31 @@ pm2 save
 ```
 
 ## Résolution des Problèmes CORS
+
+### Problème: "request client is not a secure context and the resource is in more-private address space `loopback`"
+
+Ce problème survient quand le frontend essaie d'accéder à `localhost` depuis une adresse IP publique. **Solution:**
+
+1. **Sur le VPS, configurez le frontend `.env.local`:**
+   ```bash
+   # NE PAS utiliser localhost sur le VPS!
+   NEXT_PUBLIC_API_URL=http://38.242.233.32:3031  # Utilisez l'IP du VPS
+   NEXT_PUBLIC_SOCKET_URL=http://38.242.233.32:3031
+   ```
+
+2. **Sur le VPS, configurez le backend `.env`:**
+   ```bash
+   HOST=0.0.0.0  # Écoute sur toutes les interfaces
+   PORT=3031
+   VPS_IP=38.242.233.32
+   ```
+
+3. **Redémarrez les services:**
+   ```bash
+   pm2 restart all
+   ```
+
+### Configuration CORS Automatique
 
 Le backend est configuré pour accepter:
 - Les requêtes depuis localhost (développement)

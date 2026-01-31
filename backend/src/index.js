@@ -145,8 +145,9 @@ app.use((err, req, res, next) => {
 
 // Start server
 const PORT = process.env.PORT || 3031;
-server.listen(PORT, () => {
-  logger.info(`🚀 WhatsApp Bot Manager running on port ${PORT}`);
+const HOST = process.env.HOST || '0.0.0.0'; // Listen on all interfaces
+server.listen(PORT, HOST, () => {
+  logger.info(`🚀 WhatsApp Bot Manager running on ${HOST}:${PORT}`);
   logger.info(`📱 Sessions path: ${path.resolve(sessionsPath)}`);
   
   // Initialize auto-restore of sessions
